@@ -1,51 +1,39 @@
+tasks:
+  - name: initialize
+    init: |
+      mkdir -p .vscode
+      mkdir -p ~/.local/bin/
+      echo '{"python.defaultInterpreterPath": "/home/gitpod/micromamba/envs/env/bin/python"}' > .vscode/settings.json
+      curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj -C ~/.local/ bin/micromamba
+      ~/.local/bin/micromamba shell init -s bash -p ~/micromamba
+      source ~/.bashrc
+      micromamba create -yn env pip -c conda-forge
+      micromamba activate env
+      micromamba install -y torch scipy numpy -c conda-forge
+    command: |
+      micromamba activate env
+      pip install -e .
+      pip install -e ."[dev]"
+vscode:
+  extensions:
+    - eamodio.gitlens
+    - ms-python.python
+
 github:
   prebuilds:
+    # enable for master branch
     master: true
+    # enable for other branches (defaults to false)
+    branches: true
+    # enable for pull requests coming from this repo (defaults to true)
     pullRequests: true
-    pullRequestsFromForks: true
-    addCheck: false
+    # enable for pull requests coming from forks (defaults to false)
+    pullRequestsFromForks: false
+    # add a check to pull requests (defaults to true)
+    addCheck: true
+    # add a "Review in Gitpod" button as a comment to pull requests (defaults to false)
     addComment: false
+    # add a "Review in Gitpod" button to the pull request's description (defaults to false)
     addBadge: false
+    # add a label once the prebuild is ready to pull requests (defaults to false)
     addLabel: false
-tasks:
-  - name: setup
-    init: |
-      pushd /workspace
-      wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
-      popd
-      # bootstrap activation commands for other tasks to reuse
-      cat <<EOT > /workspace/bin/activate-env.sh
-      export MAMBA_ROOT_PREFIX=/workspace/.micromamba
-      export MAMBA_EXE=/workspace/bin/micromamba
-      $(/workspace/bin/micromamba shell hook --shell=bash)
-      export JUPYTER_PREFER_ENV_PATH=1
-      micromamba activate
-      EOT
-      source /workspace/bin/activate-env.sh
-      micromamba config append channels conda-forge
-      micromamba install -n base -y -f .binder/environment.yml
-      source /workspace/bin/activate-env.sh
-      doit build
-    command: |
-      gp sync-done setup
-      source /workspace/bin/activate-env.sh
-      doit watch
-  - name: watch
-    command: |
-      gp sync-await setup
-      source /workspace/bin/activate-env.sh
-      doit serve
-  - name: docs
-    command: |
-      gp sync-await setup
-      source /workspace/bin/activate-env.sh
-      doit watch:docs
-  - name: auto-activate
-    command: |
-      gp sync-await setup
-      echo "source /workspace/bin/activate-env.sh" >> ~/.bashrc
-      source /workspace/bin/activate-env.sh
-ports:
-  - port: 5000
-  - port: 8000
-  - port: 8888
